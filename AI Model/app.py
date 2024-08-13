@@ -21,21 +21,21 @@ def extract_lat_lng(geometry):
     location = geometry['location']
     return location['lat'], location['lng']
 
-def haversine(lat1, lon1, lat2, lon2): #distance between two point on earth
+def haversine(lat1, lon1, lat2, lon2):
     lat1 = float(lat1)
     lon1 = float(lon1)
     lat2 = float(lat2)
     lon2 = float(lon2)
-    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2]) #mn degree l redian
+    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
     dlon = lon2 - lon1
     dlat = lat2 - lat1
     a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a)) #haversine eqn
-    r = 6371 #earth radius
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    r = 6371
     return r * c
 
 
-def sort_locations_by_distance(df, my_lat, my_lon): #ترتيب الdata علي حسب مسافه haversine من المكان اللي انا فيه
+def sort_locations_by_distance(df, my_lat, my_lon):
     df['distance'] = df.apply(lambda row: haversine(my_lat, my_lon, row['lat'], row['lng']), axis=1)
     return df.sort_values(by='distance')
 
@@ -44,7 +44,7 @@ def weighted_score(df):
     if len(df) == 0:
         return df
     else:
-        df['weighted_score'] = df['rating'] * np.log1p(df['user_ratings_total'])# le rating fe log(3dd el 3mlo el rate)
+        df['weighted_score'] = df['rating'] * np.log1p(df['user_ratings_total'])
         df['lat'] = df['geometry'].apply(lambda x: str(x['location']['lat']))
         df['lng'] = df['geometry'].apply(lambda x: str(x['location']['lng']))
         return df.sort_values(by='weighted_score', ascending=False)
@@ -54,7 +54,7 @@ def get_largest_cluster(data):
     max_size = 0
     max_index = 0
     for i in range(4):
-        cluster_size = data[data['cluster'] == i].shape[0] #bgeb 3dd el rows el fe el data 3la 7sb rqm el cluster
+        cluster_size = data[data['cluster'] == i].shape[0]
         if cluster_size > max_size:
             max_size = cluster_size
             max_index = i
@@ -91,12 +91,12 @@ def your_endpoint():
     ]
 
     temp.append(["restaurant", "restaurant"])
-    your_array = [int(item) for item in your_array] #mn string l int
-    for index, i in enumerate(your_array):#7t asmaa el cat el a5trtha fe temp lw el i el fe yourarry b wa7d
+    your_array = [int(item) for item in your_array]
+    for index, i in enumerate(your_array):
         if i == 1:
             temp.append(indexat[int(index)])
 
-    numOfChoosenCategouries = len(temp) #hat len el temp
+    numOfChoosenCategouries = len(temp)
 
 ####################################################################
 
@@ -109,7 +109,7 @@ def your_endpoint():
             url += f"&pagetoken={page_token}"
         return url
 
-    for item in temp: #3dy 3la kol cat
+    for item in temp:
         first_string, second_string = item[0], item[1]
         response = requests.get(build_url(first_string, second_string))
         data = response.json()
@@ -129,20 +129,20 @@ def your_endpoint():
             data = response.json()
             places.extend(data["results"])
 
-        df = pd.DataFrame(places)#make the places dataframe
+        df = pd.DataFrame(places)
 
 ######################################
 
         if first_string == "restaurant":
             print(f"restaurant with length {len(df)}")
             df = weighted_score(df)
-            df['type'] = first_string #colum gded
-            nameofcat.append(first_string) #name of the choosen cat (col el type) ,temp el 3dad
-            df = df[df['price_level'] == priceLevel]# filter 3la 7sb el budget
+            df['type'] = first_string
+            nameofcat.append(first_string)
+            df = df[df['price_level'] == priceLevel]
             df = df.loc[:, columns_to_keep_df]
             df_tourist = pd.concat([df_tourist, df], ignore_index=True)
-            df_tourist = df_tourist.drop_duplicates(subset=['name']) #34an el mkan mmken ykon fe 2 cat
-            df_tourist.reset_index(drop=True, inplace=True) #trqm bs
+            df_tourist = df_tourist.drop_duplicates(subset=['name'])
+            df_tourist.reset_index(drop=True, inplace=True)
         else:
             print(f"tourist with length {len(df)}")
             if first_string == "":
@@ -156,10 +156,10 @@ def your_endpoint():
 
             if (len(df) != 0):
                 df['price_level'] = ''
-                df = df.loc[:, columns_to_keep_df]#kda ana bsfy 3la 7sb el col to keep
+                df = df.loc[:, columns_to_keep_df]
                 df_tourist = pd.concat([df_tourist, df], ignore_index=True)
 
-            print(f"tourist shape{df_tourist.shape[0]}")#zero 3dd el rows ,1 3dd el col
+            print(f"tourist shape{df_tourist.shape[0]}")
 
 ########################## clustering
 
@@ -171,16 +171,16 @@ def your_endpoint():
     df_tourist = df_tourist.sort_values(by=['cluster', 'type'])
     cluster_counts = df_tourist['cluster'].value_counts()
 
-##############################  random bl trtib
+##############################
 
     for i in range(4):
         print(f"count_cluster_{i} ")
         print(cluster_counts.get(i, 0))
 
-    data = pd.DataFrame(columns=df_tourist.columns)#nfs el col bta3t el df_tourist
-    food_df = df_tourist[df_tourist['type'] == 'restaurant']#mta3m el df_tourist
+    data = pd.DataFrame(columns=df_tourist.columns)
+    food_df = df_tourist[df_tourist['type'] == 'restaurant']
 
-    for i in range(4): # 3mlyt el randma
+    for i in range(4):
         clust = df_tourist[df_tourist['cluster'] == i]
         clust['cluster'] = i
         for i in range(100): #
@@ -205,7 +205,7 @@ def your_endpoint():
                     c = c + 1
                 elif c == numOfChoosenCategouries - 1:
                     c = 0
-###################### main places
+######################
 
     tempDay = pd.DataFrame(columns=data.columns)
     ToDelete = pd.DataFrame(columns=data.columns)
@@ -216,13 +216,13 @@ def your_endpoint():
         max = get_largest_cluster(data)
         tempDay = data[data['cluster'] == j]
         if len(tempDay) < activities:
-            tempDay = data[data['cluster'] == max]#ro7 5od mn el kber
+            tempDay = data[data['cluster'] == max]
             tempDay = tempDay.iloc[0:activities]
         else:
             tempDay = tempDay.iloc[0:activities]
         ToDelete = tempDay
 
-        if len(tempDay) > 0: #bngeb el mmt3m
+        if len(tempDay) > 0:
             restLat = tempDay.iloc[0]['lat']
             restLng = tempDay.iloc[0]['lng']
             food_only = food_df[food_df['type'] == 'restaurant']
@@ -244,24 +244,24 @@ def your_endpoint():
         tempDay['Day'] = i + 1
         data = data.drop(ToDelete.index)
         mainFinal = pd.concat([mainFinal, tempDay], axis=0)
-        print(f"shape cluster{j} = {tempDay.shape[0]}")#ytb3 3dd el activites el fe el day w da fe anhy cluster
-    ## adding remaining food to remaining data
-    data = pd.concat([data, food_df], axis=0) # remaining data 3lha remaining resturants
+        print(f"shape cluster{j} = {tempDay.shape[0]}")
+      
+    data = pd.concat([data, food_df], axis=0)
 
-################################################### suggested places
+###################################################
 
     randomdata = pd.DataFrame()
     suggestedFinal = pd.DataFrame()
     no_of_remaining_places_in_clusters = []
     needed_suggested_per_cluster = []
-    no_of_days_per_cluster = [] #4 index
+    no_of_days_per_cluster = [] 
 
     # Knowing the number of rows in each Cluster in remaining data
     for i in range(4):
         x = data[data['cluster'] == i]
         count = x.shape[0]
         no_of_remaining_places_in_clusters.append(count)
-    # ba3rf ana wa5d mn kol cluster kam day
+
     for i in range(4):
         test = mainFinal[mainFinal['cluster'] == i]
         test.drop(test[test['type'] == 'restaurant'].index, inplace=True)
@@ -277,7 +277,7 @@ def your_endpoint():
             needed_suggested_per_cluster.append(0)
 
     cat = 0
-    for i in range(4):#random 5od wa7da mn kol catigory
+    for i in range(4):
         suggestedC = data[data['cluster'] == i]
         for i in range(200):
             supersub = suggestedC[suggestedC['type'] == nameofcat[cat]]
@@ -291,7 +291,7 @@ def your_endpoint():
 
     for i in range(days):
         x = mainFinal[mainFinal['Day'] == i + 1]
-        clustnum = x.iloc[0]['cluster'] #raqm el cluster bta3 el day
+        clustnum = x.iloc[0]['cluster']
         test = randomdata[randomdata['cluster'] == clustnum]
         print(test.shape[0])
         print(f"clustnum{clustnum}")
